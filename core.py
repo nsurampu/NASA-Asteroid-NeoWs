@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 import requests
 import json
 
@@ -97,5 +98,23 @@ class Core:
         chart['Date'] = chart['Date'].apply(lambda x: pd.to_datetime(x))
         chart.sort_values(by=['Date'], inplace=True)
         chart['Date'] = chart['Date'].apply(lambda x: x.strftime("%d-%b-%y"))
+
+        return chart
+
+
+    def get_scatter_chart_data(self):
+
+        chart = pd.DataFrame(columns=['ID', 'Close Approach Year', 'Observation Count', 'Orbiting Body', 'Avg. Miss Distance (au)', 'Avg. Relative Velocity (km/s)'])
+        chart['ID'] = self.neo_close_data['ID']
+        chart['Orbiting Body'] = self.neo_close_data['Orbiting Body']
+        chart['Close Approach Date'] = self.neo_close_data['Close Approach Date']
+        chart['Close Approach Year'] = chart['Close Approach Date'].apply(lambda x: int(x.split("-")[0]))
+        count = chart.groupby(['ID', 'Orbiting Body', 'Close Approach Year']).count()['Close Approach Date'].to_dict()
+        chart['Observation Count'] = chart[['ID', 'Orbiting Body', 'Close Approach Year']].apply(lambda x: count[(x[0], x[1], x[2])], axis=1)
+        chart.drop_duplicates(subset=['ID', 'Close Approach Year', 'Orbiting Body'], inplace=True)
+        chart.drop(['Close Approach Date'], axis=1, inplace=True)
+        self.neo_close_data['Close Approach Year'] = self.neo_close_data['Close Approach Date'].apply(lambda x: x.split("-")[0])
+        chart['Avg. Miss Distance (au)'] = chart[['ID', 'Close Approach Year', 'Orbiting Body', 'Observation Count']].apply(lambda x: self.neo_close_data.loc[(self.neo_close_data['ID']==x[0]) & (self.neo_close_data['Close Approach Year']==x[1]) & (self.neo_close_data['Orbiting Body']==x[2])]['Miss Distance (au)'].sum() / x[3], axis=1)
+        chart['Avg. Relative Velocity (km/s)'] = chart[['ID', 'Close Approach Year', 'Orbiting Body', 'Observation Count']].apply(lambda x: self.neo_close_data.loc[(self.neo_close_data['ID']==x[0]) & (self.neo_close_data['Close Approach Year']==x[1]) & (self.neo_close_data['Orbiting Body']==x[2])]['Relative Velocity (km/s)'].sum() / x[3], axis=1)
 
         return chart

@@ -2,10 +2,6 @@ import streamlit as st
 from datetime import datetime, timedelta
 from core import Core
 import pandas as pd
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import mpld3
-# import streamlit.components.v1 as components
 import plotly.express as px
 
 
@@ -40,17 +36,18 @@ with tab1:
 
     bar_col1, bar_col2 = st.columns((2, 1))
     bar_chart_data = obj.get_bar_chart_data()
-    # bar_chart = plt.figure(figsize=(11, 5))
-    # plt.title("Near Earth Object Count Distribution")
-    # sns.barplot(data=bar_chart_data, x='Date', y='Object Count')
-    # components.html(mpld3.fig_to_html(bar_chart), height=500)
     bar_chart = px.bar(bar_chart_data, x='Date', y='Object Count', hover_data=['Object Count', 'Potentially Hazardous', 'Sentry Objects', 'Min Estimated Diameter (km)', 'Max Estimated Diameter (km)',
     'Min Miss Distance (au)', 'Max Miss Distance (au)', 'Min Relative Velocity (km/s)', 'Max Relative Velocity (km/s)'])
     bar_col1.plotly_chart(bar_chart, theme='streamlit', use_container_width=True)
 
     date_options = bar_col2.multiselect(label="Select date(s) to get observed Object IDs", options=pd.unique(bar_chart_data['Date'].values), default=pd.unique(bar_chart_data['Date'].values)[0])
-    selected_data_options = [x for x in date_options]
-    bar_col2.table(bar_chart_data.loc[bar_chart_data['Date'].isin(selected_data_options)]['Objects'])
+    bar_col2.table(bar_chart_data.loc[bar_chart_data['Date'].isin(date_options)]['Objects'])
+
+    scatter_chart_data = obj.get_scatter_chart_data()
+    object_options = st.multiselect(label="Select Object to view close approach graph", options=pd.unique(scatter_chart_data['ID']), default=pd.unique(scatter_chart_data['ID'].values))
+    scatter_chart = px.scatter(scatter_chart_data.loc[scatter_chart_data['ID'].isin(object_options)], x='Avg. Relative Velocity (km/s)', y='Avg. Miss Distance (au)', color='Orbiting Body', size='Observation Count',
+                                animation_frame='Close Approach Year')
+    st.plotly_chart(scatter_chart, theme='streamlit', use_container_width=True)
 
 with tab2:
 
